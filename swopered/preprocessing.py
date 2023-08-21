@@ -1,44 +1,38 @@
 import astropy.io.fits as fits
 from glob import glob
-from os import path
+from pathlib import Path
 from astropy.table import Table
 
 
-def ls(dir):
+def create_table_from_images(data_dir: Path) -> Table:
     """
-    This function reads a directory where fits images are expected to be. From this files it constructs a table
-    from the header of the images.
-
-    :param dir: string with the path to the directory
-    :return: Astropy Table
+    This function reads a directory where fits images are expected to be. 
+    From these files it constructs a table using the header information about the images.
     """
-    cols = ['file', 'exptype', 'object', 'exptime', 'filter', 'ra', 'ra_d', 'dec', 'dec_d', 'ut_date', 'ut_time',
-            'airmass', 'observer', 'binning', 'opamp']
-    file_list = glob(path.join(dir, '*c1.fits'))
-    file_list.sort()
-    rows = []
 
-    for file in file_list:
-        with fits.open(file) as hdul:
+
+    for fits_file in data_dir.glob("*.fits"):
+        with fits.open(fits_file) as hdul:
             hdu = hdul[0]
             header = hdu.header
 
-        exptype = header['EXPTYPE']
-        object = header['OBJECT']
-        exptime = header['EXPTIME']
-        filter = header['FILTER']
-        ra = header['RA']
-        ra_d = header['RA-D']
-        dec = header['DEC']
-        dec_d = header['DEC-D']
-        ut_date = header['UT-DATE']
-        ut_time = header['UT-TIME']
-        airmass = header['AIRMASS']
-        observer = header['OBSERVER']
-        binning = header['BINNING']
-        opamp = header['OPAMP']
+        data = {
+            "filename": header["FILENAME"],
+            "exptype": header["EXPTYPE"],
+            "object": header["OBJECT"],
+            "exptime": header["EXPTIME"],
+            "filter": header["FILTER"],
+            "ra": header["RA"],
+            "ra_d": header["RA-D"],
+            "dec": header["DEC"],
+            "dec_d": header["DEC-D"],
+            "equinox": header["EQUINOX"],
+            "telfocus": header["TELFOCUS"],
+            "airmass": header["AIRMASS"],
+            "ut_date": header["UT-DATE"],
+            "ut_time": header["UT-TIME"],
+            "ut_end": header["UT-END"],
+            "path": fits_file.resolve(),
+        }
 
-        rows.append((file, exptype, object, exptime, filter, ra, ra_d, dec, dec_d, ut_date, ut_time,
-                     airmass, observer, binning, opamp))
-
-    return Table(names=cols, rows=rows)
+    return Table(data)
